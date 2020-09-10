@@ -56,6 +56,7 @@ class HomeViewModelUnitTests: XCTestCase {
         }
     }
     
+    let delegateMock = DelegateMock()
     let repositoryMock = FavoriteRepositoryMock()
     let mockService = HomeServiceMock()
     var sut: HomeViewModel!
@@ -63,6 +64,7 @@ class HomeViewModelUnitTests: XCTestCase {
     override func setUp() {
         super.setUp()
         sut = HomeViewModel(service: mockService, favoriteRepository: repositoryMock)
+        sut.delegate = delegateMock
     }
     
     func testDidSelectInFavoriteElement() {
@@ -75,17 +77,48 @@ class HomeViewModelUnitTests: XCTestCase {
         XCTAssertFalse(repositoryMock.storeFavoriteWasCalled)
     }
     
-//    func testDidSelectInNotFavoriteElement() {
-//        // Do this test
-//    }
-//
-//    func testFetchAlbunsSuccessfully() {
-//        // Do this test
-//    }
-//
-//    func testFetchAlbunsFailure() {
-//        // Do this test
-//    }
+    func testDidSelectInNotFavoriteElement() {
+        // Do this test
+        sut.colectionsArray = generateCollectionArray(numberOfElements: 5)
+        repositoryMock.mockIsFavorite = false
+        
+        sut.didSelect(at: IndexPath(row: 0, section: 0))
+        
+        XCTAssert(repositoryMock.storeFavoriteWasCalled)
+        XCTAssertFalse(repositoryMock.removeFavoriteWasCalled)
+    }
+
+    func testFetchAlbunsSuccessfully() {
+        // Do this test
+        let exp = expectation(description: "fetch album")
+        
+        mockService.onCompleteFetchAlbunsMock = .success(generateCollectionArray(numberOfElements: 10))
+        
+        delegateMock.reloadTableWasCalled = {
+            XCTAssertEqual(self.sut.colectionsArray.count, 10)
+            exp.fulfill()
+        }
+        
+        sut.fetchAlbuns()
+        
+        waitForExpectations(timeout: 15.0)
+    }
+
+    func testFetchAlbunsFailure() {
+        // Do this test
+        let exp = expectation(description: "fetch album")
+        
+        mockService.onCompleteFetchAlbunsMock = .failure(URLError.init(.badURL))
+        
+        delegateMock.showErrorWasCalled = {
+            XCTAssertEqual(self.sut.colectionsArray.count, 0)
+            exp.fulfill()
+        }
+        
+        sut.fetchAlbuns()
+        
+        waitForExpectations(timeout: 15.0)
+    }
 //
 //    func testIsFavoritedAlbum() {
 //        // Do this test
